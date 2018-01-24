@@ -72,10 +72,48 @@ export class HistoryView extends React.Component<HistoryProps, {}> {
         const lastActivity = this.props.activities[this.props.activities.length - 1];
         const lastActivityFromMe = lastActivity && this.props.isFromMe && this.props.isFromMe(lastActivity);
 
+        // Teleport changes
         // Validating if we are at the bottom of the list or the last activity was triggered by the user.
-        if (this.scrollToBottom || lastActivityFromMe) {
-            this.scrollMe.scrollTop = this.scrollMe.scrollHeight - this.scrollMe.offsetHeight;
+        if (lastActivityFromMe) {
+            var scrolling = this.scrollMe.scrollHeight - this.scrollMe.offsetHeight;
+            if (lastActivity) {
+                var answer = this.scrollMe.querySelector('[data-activity-id="' + lastActivity.id + '"]') as HTMLElement;
+                if (answer) {
+                    scrolling = answer.offsetTop - 10
+                }
+            }
+            this.scrollMe.scrollTo({behavior: 'smooth', top: scrolling});
+            //this.scrollMe.scrollTop = this.scrollMe.scrollHeight - this.scrollMe.offsetHeight;
         }
+        
+        var myLastActivity : Activity, firstChatAnswer, index = this.props.activities.length - 1;
+        // Search last entry from user
+        for ( ; index >= 0; index--) {
+            if (this.props.isFromMe(this.props.activities[index])) {
+                myLastActivity = this.props.activities[index];
+                break;
+            }
+        }
+        if(myLastActivity) {
+            // Set first answer from chatbot  
+            firstChatAnswer = this.props.activities[index+1];
+        }
+        else if (lastActivity && lastActivity.type !== 'typing') {
+            myLastActivity = lastActivity;
+            firstChatAnswer = lastActivity;
+        }
+        if(firstChatAnswer) {
+            if (myLastActivity.id && myLastActivity.id !== (lastActivity as MessageExtension).replyToId) {
+                // show last activity cause we have no reply to
+                firstChatAnswer = lastActivity;
+            }
+            var answer = this.scrollMe.querySelector('[data-activity-id="' + firstChatAnswer.id + '"]') as HTMLElement;
+            // Scroll to first message from bot to avoid jumping to the end
+            //this.scrollMe.scrollTop = answer.offsetTop - 10;
+            this.scrollMe.scrollTo({behavior: 'smooth', top: answer.offsetTop - 10});
+        }
+
+        // End Teleport Changes
     }
 
     // In order to do their cool horizontal scrolling thing, Carousels need to know how wide they can be.
